@@ -1,8 +1,9 @@
 import './App.css';
 import 'reactflow/dist/style.css';
-import { useCallback, useState, useEffect } from 'react';
-import ReactFlow, { useNodesState, useEdgesState, addEdge, applyNodeChanges, applyEdgeChanges, MarkerType, ReactFlowProvider } from 'reactflow';
+import { useCallback, useState, useEffect, useRef } from 'react';
+import ReactFlow, { useNodesState, useEdgesState, addEdge, applyNodeChanges, applyEdgeChanges, MarkerType, ReactFlowProvider, Background } from 'reactflow';
 import NodeType from "./CircleNode";
+import ContextMenu from './ContextMenu'
 
 const nodeTypes = {
   circleNode: NodeType
@@ -30,13 +31,10 @@ const App = () => {
   const [isAccepted, setIsAccepted] = useState(false);
   const [outputMessage, setOutputMessage] = useState("");
 
-  // const onConnect = useCallback(
-  //   (params) => setEdges((eds) => addEdge(params, eds)),
-  //   [],
-  // );
+  const [menu, setMenu] = useState(null);
+  const ref = useRef(null);
 
   const onConnect = (params) => {
-    // Customize the edge properties here
     const newEdge = {
       ...params,
       id: (edges.length + 1).toString(),
@@ -66,9 +64,11 @@ const App = () => {
     if (edge[0]) {
       setSelectedEdge(edge[0]);
       setIsSelected(true);
+      setEdgeName(edge[0].label)
     } else {
       setSelectedEdge("");
       setIsSelected(false);
+      setEdgeName("")
     }
   }, [edges]);
 
@@ -83,6 +83,33 @@ const App = () => {
       })
     })
   }, [edgeName, setEdges]);
+
+  useEffect(() => {
+
+    setNodes((nds) => {
+      return nds.map((node) => {
+
+        if (node.finalState) {
+          node.style = {
+            ...node.style,
+            backgroundColor: 'green',
+          };
+        } else {
+          node.style = {
+            width: "50px",
+            height: "50px",
+            borderRadius: "10em",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: 'red',
+          }
+        }
+        return node;
+      })
+    })
+
+  }, [nodes, setNodes])
   
 
   const addCircleNode = () => {
@@ -96,6 +123,7 @@ const App = () => {
       },
       padding: "14px",
       borderRadius: "50%",
+      finalState: false
     };
     setNodes((prevElements) => [...prevElements, newNode]);
   }
@@ -105,13 +133,7 @@ const App = () => {
 
     for (const symbol of inputString) {
 
-      console.log(edges);
-      console.log(symbol);
-      console.log(currentStateCopy);
-
       const transition = edges.find((edge) => edge.source === currentStateCopy && edge.label === symbol);
-
-      console.log(transition);
 
       if (transition) {
         currentStateCopy = transition.target;
@@ -129,28 +151,57 @@ const App = () => {
     }
   }, [isAccepted]);
 
+  const onNodeContextMenu = useCallback(
+    (event, node) => {
+      // Prevent native context menu from showing
+      event.preventDefault();
+
+      // Calculate position of the context menu. We want to make sure it
+      // doesn't get positioned off-screen.
+      const pane = ref.current.getBoundingClientRect();
+      setMenu({
+        id: node.id,
+        top: event.clientY < pane.height - 200 && event.clientY,
+        left: event.clientX < pane.width - 200 && event.clientX,
+        right: event.clientX >= pane.width - 200 && pane.width - event.clientX,
+        bottom:
+          event.clientY >= pane.height - 200 && pane.height - event.clientY,
+      });
+    },
+    [setMenu],
+  );
+
+  const onPaneClick = useCallback(() => setMenu(null), [setMenu]);
+
   return (
     <>
-    <h1>Automata Simulator</h1>
+    <h1 class="text-5xl font-extrabold dark:text-white">Automata Simulator</h1>
     <ReactFlowProvider>
     <div style={{ position: 'relative', width: '1000px', height: '500px', border: '1px solid black' }}>
       <ReactFlow 
+        ref={ref}
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         nodeTypes={nodeTypes}
-      />
+        onNodeContextMenu={onNodeContextMenu}
+      >
+        <Background />
+      {menu && <ContextMenu onClick={onPaneClick} {...menu} />}
+      </ReactFlow>
     </div>
-    <button onClick={() => addCircleNode()}>Add Node</button>
-    <div className="updatenode_checkboxwrapper">
-      <label>label: </label>
-      <input value={edgeName} onChange={(evt) => setEdgeName(evt.target.value)} />
+    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 border border-blue-700 rounded" onClick={() => addCircleNode()}>Add Node</button>
+    <div className="updatenode_checkboxwrapper" style={{ display: 'flex', alignItems: 'center' }}>
+      <label class="font-extrabold dark:text-white">Label: </label>
+      <input class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" value={edgeName} onChange={(evt) => setEdgeName(evt.target.value)} />
     </div>
-    <label>Input String: </label>
-    <input id="inputString"></input>
-    <button onClick={() => checkInputString(document.getElementById('inputString').value)}>Check Input</button>
+    <div className="updatenode_checkboxwrapper" style={{ display: 'flex', alignItems: 'center' }}>
+      <label class="font-extrabold dark:text-white">Input String: </label>
+      <input class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" id="inputString"></input>
+    </div>
+    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 border border-blue-700 rounded" onClick={() => checkInputString(document.getElementById('inputString').value)}>Check Input</button>
     <div>{outputMessage}</div>
     </ReactFlowProvider>
     </>

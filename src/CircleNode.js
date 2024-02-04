@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { Handle, Position } from 'reactflow';
 
 export default memo(({ data, isConnectable }) => {
+
   return (
     <>
       <Handle
@@ -16,7 +17,6 @@ export default memo(({ data, isConnectable }) => {
                 width: "50px",
                 height: "50px",
                 borderRadius: "10em",
-                backgroundColor: "#055C9D",
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center"
@@ -31,28 +31,3 @@ export default memo(({ data, isConnectable }) => {
     </>
   );
 });
-
-
-
-/*function CircleNode() {
-    return (
-        
-        <article
-            style={{
-                width: "50px",
-                height: "50px",
-                borderRadius: "10em",
-                backgroundColor: "#055C9D",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center"
-            }}
-        >
-        </article>
-        
-        
-    )
-}
-
-export default CircleNode;
-*/
