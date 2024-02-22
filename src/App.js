@@ -10,8 +10,8 @@ const nodeTypes = {
 };
 
 const initialNodes = [
-  { id: '1', position: { x: 0, y: 0 }, data: { label: 'q0' }, type: "circleNode" },
-  { id: '2', position: { x: 0, y: 0 }, data: { label: 'q1' }, type: "circleNode" }
+  { id: '1', position: { x: 0, y: 0 }, data: { label: 'q0', finalState: false }, type: "circleNode"},
+  { id: '2', position: { x: 0, y: 0 }, data: { label: 'q1', finalState: false }, type: "circleNode" }
 ];
 const initialEdges = [
   { id: 'e1-3', source: '1', target: '2', label: 'choose', markerEnd: {type: MarkerType.ArrowClosed, width: 20, height: 20}, style:  {strokeWidth: 2} },
@@ -23,11 +23,13 @@ const App = () => {
   const [edges, setEdges] = useEdgesState(initialEdges);
   
   const [edgeName, setEdgeName] = useState("Edge 1");
+  const [inputString, setInputString] = useState('');
+  const [inputList, setInputList] = useState([]);
 
   const [selectedEdge, setSelectedEdge] = useState(null);
   const [isSelected, setIsSelected] = useState(false);
 
-  const [currentState, setCurrentState] = useState("1");
+  const [currentState, setCurrentState] = useState(nodes.find(node => node.id === '1'));
   const [isAccepted, setIsAccepted] = useState(false);
   const [outputMessage, setOutputMessage] = useState("");
 
@@ -83,39 +85,12 @@ const App = () => {
       })
     })
   }, [edgeName, setEdges]);
-
-  useEffect(() => {
-
-    setNodes((nds) => {
-      return nds.map((node) => {
-
-        if (node.finalState) {
-          node.style = {
-            ...node.style,
-            backgroundColor: 'green',
-          };
-        } else {
-          node.style = {
-            width: "50px",
-            height: "50px",
-            borderRadius: "10em",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            backgroundColor: 'red',
-          }
-        }
-        return node;
-      })
-    })
-
-  }, [nodes, setNodes])
   
 
   const addCircleNode = () => {
     const newNode = {
       id: (nodes.length + 1).toString(),
-      data: { label: `q${nodes.length}` },
+      data: { label: `q${nodes.length}`, finalState: false },
       type: "circleNode",
       position: {
         x: 0,
@@ -123,7 +98,6 @@ const App = () => {
       },
       padding: "14px",
       borderRadius: "50%",
-      finalState: false
     };
     setNodes((prevElements) => [...prevElements, newNode]);
   }
@@ -131,17 +105,28 @@ const App = () => {
   const checkInputString = (inputString) => {
     let currentStateCopy = currentState;
 
+    let transitionFound = true
+
     for (const symbol of inputString) {
 
-      const transition = edges.find((edge) => edge.source === currentStateCopy && edge.label === symbol);
+      const transition = edges.find((edge) => edge.source === currentStateCopy.id && edge.label === symbol);
 
       if (transition) {
-        currentStateCopy = transition.target;
+        currentStateCopy = nodes.find(node => node.id === transition.target);
+      } else {
+        console.log("No Transition Found");
+        transitionFound = false
       }
+      console.log("CurrentStateCopy: ", currentStateCopy);
     }
 
-    setIsAccepted(currentStateCopy === "2")
+
+    setIsAccepted(transitionFound && currentStateCopy.data.finalState);
   }
+
+  /*const addInputBtnClick = () => {
+    setInputList(inputList.concat(<Input key={inputList.length} />));
+  }*/
 
   useEffect(() => {
     if (isAccepted) {
@@ -153,11 +138,8 @@ const App = () => {
 
   const onNodeContextMenu = useCallback(
     (event, node) => {
-      // Prevent native context menu from showing
       event.preventDefault();
 
-      // Calculate position of the context menu. We want to make sure it
-      // doesn't get positioned off-screen.
       const pane = ref.current.getBoundingClientRect();
       setMenu({
         id: node.id,
@@ -171,26 +153,41 @@ const App = () => {
     [setMenu],
   );
 
+  /*const Input = () => {
+    return (
+      <div style={{display: 'flex'}}>
+      <label class="font-extrabold dark:text-white">Label: </label>
+      <input class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" value={inputString} onChange={(evt) => setInputString(evt.target.value)} />
+      <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 border border-blue-700 rounded" onClick={() => checkInputString(inputString)}>Test</button>
+      <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 border border-blue-700 rounded" onClick={() => checkInputString(inputString)}>Step</button>
+      </div>
+    )
+  }*/
+
   const onPaneClick = useCallback(() => setMenu(null), [setMenu]);
 
   return (
     <>
     <h1 class="text-5xl font-extrabold dark:text-white">Automata Simulator</h1>
     <ReactFlowProvider>
-    <div style={{ position: 'relative', width: '1000px', height: '500px', border: '1px solid black' }}>
-      <ReactFlow 
-        ref={ref}
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        nodeTypes={nodeTypes}
-        onNodeContextMenu={onNodeContextMenu}
-      >
-        <Background />
-      {menu && <ContextMenu onClick={onPaneClick} {...menu} />}
-      </ReactFlow>
+    <div style={{ display: 'flex' }}>
+      <div style={{ position: 'relative', width: '800px', height: '500px', border: '1px solid black' }}>
+        <ReactFlow 
+          ref={ref}
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          nodeTypes={nodeTypes}
+          onNodeContextMenu={onNodeContextMenu}
+        >
+          <Background />
+        {menu && <ContextMenu onClick={onPaneClick} {...menu} />}
+        </ReactFlow>
+      </div>
+      <div className="updatenode_checkboxwrapper" style={{ display: 'absolute', alignItems: 'top' }}>
+      </div>
     </div>
     <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 border border-blue-700 rounded" onClick={() => addCircleNode()}>Add Node</button>
     <div className="updatenode_checkboxwrapper" style={{ display: 'flex', alignItems: 'center' }}>
@@ -199,9 +196,9 @@ const App = () => {
     </div>
     <div className="updatenode_checkboxwrapper" style={{ display: 'flex', alignItems: 'center' }}>
       <label class="font-extrabold dark:text-white">Input String: </label>
-      <input class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" id="inputString"></input>
+      <input class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" value={inputString} onChange={(evt) => setInputString(evt.target.value)} />
     </div>
-    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 border border-blue-700 rounded" onClick={() => checkInputString(document.getElementById('inputString').value)}>Check Input</button>
+    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 border border-blue-700 rounded" onClick={() => checkInputString(inputString)}>Check Input</button>
     <div>{outputMessage}</div>
     </ReactFlowProvider>
     </>

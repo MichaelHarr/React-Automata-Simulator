@@ -28,7 +28,7 @@ export default function ContextMenu({
   const setfinalState = useCallback(() => {
     setNodes((nodes) => {
         const updatedNodes = nodes.map((node) =>
-            node.id === id ? { ...node, finalState: !node.finalState} : node
+            node.id === id ? { ...node, data: {...node.data, finalState : !node.data.finalState}}: node
         );
 
         console.log("Updated nodes:", updatedNodes);
