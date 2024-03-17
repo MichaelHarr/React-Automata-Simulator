@@ -2,7 +2,7 @@ import React, { memo } from 'react';
 import { Handle, Position } from 'reactflow';
 
 
-export default memo(({ data, isConnectable}) => {
+export default memo(({ data, isConnectable }) => {
 
   return (
     <>
@@ -23,7 +23,7 @@ export default memo(({ data, isConnectable}) => {
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                backgroundColor: 'yellow',
+                backgroundColor: data.initialState ? 'lightGreen' : 'yellow'
             }}
         >
         <div

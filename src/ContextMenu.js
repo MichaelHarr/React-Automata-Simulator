@@ -5,12 +5,13 @@ export default function ContextMenu({
   id,
   top,
   left,
-  right,
-  bottom,
   data,
+  setCurrentState,
+  getCurrentState,
+  
   ...props
 }) {
-  const { setNodes, setEdges } = useReactFlow();
+  const { getNode, setNodes, setEdges } = useReactFlow();
 
   const deleteNode = useCallback(() => {
     setNodes((nodes) => nodes.filter((node) => node.id !== id));
@@ -29,13 +30,41 @@ export default function ContextMenu({
 
   }, [id, setNodes])
 
+
+  const setInitialState = useCallback(() => {
+    setCurrentState(getNode(id));
+    setNodes((nodes) => {
+      const updatedNodes = nodes.map((node) => {
+        // Check if the node id matches the id of the current state
+        if (node.id === id) {
+          // Update the data object of the node to set initialState
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              initialState: true // Assuming you want to set initialState to true
+            }
+          } 
+        }
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            initialState: false // Assuming you want to set initialState to true
+          }
+        }
+      });
+  
+      return updatedNodes;
+    });
+  }, [id, getCurrentState, setNodes, setCurrentState]);
+
   console.log("Hi");
-  console.log(data);
 
   return (
     <div
-      style={{ top, left, right, bottom, position: 'absolute' }}
-      class="z-10 bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700"
+      style={{ top, left, position: 'absolute' }}
+      class="z-10 bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700 absolute"
       {...props}
     >
       <p class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white" style={{ margin: '0.5em' }}>
@@ -43,6 +72,7 @@ export default function ContextMenu({
       </p>
       <button class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white" onClick={deleteNode}>delete</button>
       <button class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white" onClick={setfinalState}>Toggle Final State</button>
+      <button class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white" onClick={setInitialState}>Toggle Initial State</button>
     </div>
   );
 }

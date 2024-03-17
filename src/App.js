@@ -5,6 +5,7 @@ import ReactFlow, { useNodesState, useEdgesState, addEdge, applyNodeChanges, app
 import { SmartBezierEdge, SmartStraightEdge, SmartStepEdge } from '@tisoap/react-flow-smart-edge'
 import NodeType from "./CircleNode";
 import ContextMenu from './ContextMenu'
+import { v4 as uuidv4 } from 'uuid';
 
 const nodeTypes = {
   circleNode: NodeType
@@ -16,11 +17,11 @@ const edgeTypes = {
 }
 
 const initialNodes = [
-  { id: '1', position: { x: 0, y: 0 }, data: { label: 'q0', finalState: false, description: '' }, type: "circleNode"},
-  { id: '2', position: { x: 0, y: 0 }, data: { label: 'q1', finalState: false, description: '' }, type: "circleNode" }
+  { id: '1', position: { x: 200, y: 200 }, data: { label: 'q0', finalState: false, description: '', initialState: true }, type: "circleNode"},
+  { id: '2', position: { x: 500, y: 195 }, data: { label: 'q1', finalState: true, description: '', initialState: false }, type: "circleNode" }
 ];
 const initialEdges = [
-  //{ id: 'e1-3', source: '1', target: '2', label: '1', markerEnd: {type: MarkerType.ArrowClosed, width: 20, height: 20}, style:  {strokeWidth: 2}, type: "smart"},
+  { id: 'e1-3', source: '1', target: '2', label: '1', markerEnd: {type: MarkerType.ArrowClosed, width: 20, height: 20}, style:  {strokeWidth: 2}},
 ];
 
 
@@ -83,6 +84,23 @@ const App = () => {
     }
   }, [edges]);
 
+  useEffect(() => {
+    const node = nodes.filter((node) => {
+      if (node.selected) return true;
+      return false;
+    });
+
+    if (node[0]) {
+      setSelectedNode(node[0]);
+      setIsSelected(true);
+      // setNode(node[0].label)
+    } else {
+      setSelectedNode("");
+      setIsSelected(false);
+      // setEdgeName("")
+    }
+  }, [nodes]);
+
    useEffect(() => {
     setEdges((eds) => {
       return eds.map((edge) => {
@@ -94,8 +112,6 @@ const App = () => {
       })
     })
   }, [edgeName, setEdges]);
-
-  
   
   useEffect(() => {
     setNodes((nds) => {
@@ -111,8 +127,9 @@ const App = () => {
 
   const addCircleNode = () => {
     const newNode = {
-      id: (nodes.length + 1).toString(),
-      data: { label: `q${nodes.length}`, finalState: false, description: nodeDescription },
+      // id: (nodes.length + 1).toString(),
+      id: uuidv4(),
+      data: { label: `q${nodes.length}`, finalState: false, description: nodeDescription, initialState: false },
       type: "circleNode",
       position: {
         x: 0,
@@ -121,6 +138,8 @@ const App = () => {
       padding: "14px",
       borderRadius: "50%",
     };
+    console.log("currentstateId")
+    console.log(currentState.id)
     setNodes((prevElements) => [...prevElements, newNode]);
   }
 
@@ -167,17 +186,19 @@ const App = () => {
       const pane = ref.current.getBoundingClientRect();
       setMenu({
         id: node.id,
-        top: event.clientY < pane.height - 200 && event.clientY,
-        left: event.clientX < pane.width - 200 && event.clientX,
-        right: event.clientX >= pane.width - 200 && pane.width - event.clientX,
-        bottom:
-          event.clientY >= pane.height - 200 && pane.height - event.clientY,
-        data: node.data
+        top: event.clientY - 50,
+        left: event.clientX - 500,
+        data: node.data,
+        currentState: setCurrentState,
+        getCurrentState: currentState
       });
       console.log(node.data);
     },
     [setMenu],
   );
+
+  console.log("Initial State");
+  console.log(currentState);
 
   /*const Input = () => {
     return (
@@ -195,15 +216,16 @@ const App = () => {
   return (
     <div style={{backgroundColor:'#EFFAFD'}}>
     <h1 class="text-5xl font-extrabold dark:text-white">Automata Simulator</h1>
+    <p>A web application for creating and simulating finite state automata</p>
     <ReactFlowProvider>
     <div class="grid grid-cols-3 grid-rows-5 gap-1 items-top justify-center" style={{ display: 'flex', border: '1px solid black' }}>
       <div class="w-1/5" style={{ border: '1px solid black'}}>
-        <label class="font-extrabold dark:text-white">Input Strings: </label>
+        <label class="font-extrabold dark:text-white">Input String: </label>
         <div className="updatenode_checkboxwrapper flex" style={{ alignContent: 'center', dispaly: 'flex' }}>
           <input style={{ width: '70%'}} class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" value={inputString} onChange={(evt) => setInputString(evt.target.value)} />
           <div class="font-extrabold flex align-middle" style={{color: isAccepted? 'green' : 'red'}}>{outputMessage}</div>
         </div>
-        <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 border border-blue-700 rounded" onClick={() => checkInputString(inputString)}>Check Inputs</button>
+        <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 border border-blue-700 rounded" onClick={() => checkInputString(inputString)}>Check Input</button>
       </div>
       <div class="w-3/5 row-start-1" style={{ position: 'relative', width: '800px', height: '500px', border: '1px solid black' }}>
         <ReactFlow 
@@ -218,7 +240,7 @@ const App = () => {
           onNodeContextMenu={onNodeContextMenu}
         >
           <Background />
-        {menu && <ContextMenu onClick={onPaneClick} {...menu} />}
+        {menu && <ContextMenu onClick={onPaneClick} {...menu} setCurrentState={setCurrentState} />}
         </ReactFlow>
       </div>
      
@@ -237,9 +259,23 @@ const App = () => {
     </div>
     <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 border border-blue-700 rounded" onClick={() => addCircleNode()}>Add Node</button>
     <div className="updatenode_checkboxwrapper" style={{ display: 'flex', alignItems: 'center' }}>
-      <label class="font-extrabold dark:text-white">Label: </label>
+      <label class="font-extrabold dark:text-white">Edge Label: </label>
       <input class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" value={edgeName} onChange={(evt) => setEdgeName(evt.target.value)} />
     </div>
+    <h3 class="pt-5 pb-3 text-3xl font-extrabold dark:text-white">Guide:</h3>
+    <p class="font-bold">Add Node button above creates a new state</p>
+    <p class="font-bold">Click on transition to edit it's symbol in text input above</p>
+    <br></br>
+    <p class="font-bold">Right Click a state to toggle what type of state it is:</p>
+    <p class="font-normal">Green state = initial state</p>
+    <p class="font-normal">Extra ring = final state</p>
+    <br></br>
+    <p class="font-bold">Clicking on state allows you to edit it's description on the right</p>
+    <p class="font-bold">Left side allows for checking what inputs are accepted by the automaton</p>
+    <br></br>
+    <p class="font-bold pb-12">Non-Deterministic Automata not currently supported</p>
+    <br></br>
+    <br></br>
     </ReactFlowProvider>
     </div>
   )

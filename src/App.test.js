@@ -1,8 +1,15 @@
-import { render, screen } from '@testing-library/react';
+// Import ResizeObserver from a module that exports a mock implementation
+import { ResizeObserver } from '@juggle/resize-observer';
+
+// Assign the mock implementation to the global scope
+global.ResizeObserver = ResizeObserver;
+
+// Import render from '@testing-library/react' after setting up the mock
+import { render } from '@testing-library/react';
 import App from './App';
 
-test('renders learn react link', () => {
-  render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
-});
+describe('App component', () => {
+ test('it renders', () => {
+   render(<App />);
+ });
+})
